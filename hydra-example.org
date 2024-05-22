@@ -1,0 +1,64 @@
+# Created 2024-05-22 Wed 11:28
+#+title: Text-scaling (hydra example)
+
+
+* fn's
+** adjust-font-size
+#+begin_src emacs-lisp
+  (defun my/adjust-font-size (height)
+    "Adjust font size by given height. If height is '0', reset font
+    size. This function also handles icons and modeline font sizes."
+    (interactive "nHeight ('0' to reset): ")
+    (let ((new-height (if (zerop height)
+                          my/default-font-size
+                        (+ height (face-attribute 'default :height)))))
+      (set-face-attribute 'default nil :height new-height)
+      (set-face-attribute 'mode-line nil :height new-height)
+      (set-face-attribute 'mode-line-inactive nil :height new-height)
+      (message "Font size: %s" new-height))
+    (let ((new-size (if (zerop height)
+                        my/default-icon-size
+                      (+ (/ height 5) treemacs--icon-size))))
+      (when (fboundp 'treemacs-resize-icons)
+        (treemacs-resize-icons new-size))
+      (when (fboundp 'company-box-icons-resize)
+        (company-box-icons-resize new-size)))
+    (when diff-hl-mode
+      (diff-hl-maybe-redefine-bitmaps)))
+#+end_src
+** increase-font-size
+#+begin_src emacs-lisp
+  (defun my/increase-font-size ()
+    "Increase font size by 0.5 (5 in height)."
+    (interactive)
+    (my/adjust-font-size 5))
+#+end_src
+** decrease-font-size
+#+begin_src emacs-lisp
+  (defun my/decrease-font-size ()
+    "Decrease font size by 0.5 (5 in height)."
+    (interactive)
+    (my/adjust-font-size -5))
+#+end_src
+** reset-font-size
+#+begin_src emacs-lisp
+  (defun my/reset-font-size ()
+    "Reset font size according to the `my/default-font-size'."
+    (interactive)
+    (my/adjust-font-size 0))
+#+end_src
+* hydra body
+#+begin_src emacs-lisp
+    (use-package hydra :straight t)
+
+    (defhydra hydra-text-scale (:timeout 4)
+      "scale text"
+      ("j" text-scale-increase "in")
+      ("k" text-scale-decrease "out")
+      ("+" text-scale-increase "in")
+      ("-" text-scale-decrease "out")
+      ("q" nil "quit" :exit t))
+
+  (general-define-key :modes '(global override)
+                      "C-, C-w C-z" 'hydra-text-scale/body)
+#+end_src
